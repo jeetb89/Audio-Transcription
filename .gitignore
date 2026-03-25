@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.env
+
+# Virtual Environment
+venv/
+env/
+ENV/
+whisper-env/
+
+# Audio files
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.wma
+temp_audio*
+
+# Transcription outputs
+*_transcript.txt
+*_transcription.txt
+transcript*.txt
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+/personal
+/personal.pub
+# Logs
+*.log
+
+# Supabase CLI (keep migrations/ and config.toml committed)
+supabase/.temp/
+
+# Specific directories
+/art_of_war_librivox_64kb_mp3
+/personal
+/personal.pub

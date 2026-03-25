@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audio-transcription"
+version = "0.1.0"
+description = "Audio transcription services (Whisper, AssemblyAI, YouTube)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openai-whisper",
+    "yt-dlp>=2026.1.1",
+    "assemblyai",
+    "python-dotenv",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.9",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "psycopg[binary]>=3.2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["audio_transcription*"]
+
+[project.scripts]
+at-api = "audio_transcription.api.main:run_dev"
+at-db = "audio_transcription.db.cli:main"
