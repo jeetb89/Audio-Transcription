@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { FileUpload } from "@/components/FileUpload";
 import { TranscriptAudioPlayer, parseWhisperSegments } from "@/components/TranscriptAudioPlayer";
+import { MAX_UPLOAD_MB } from "@/constants/limits";
 
 const models = ["tiny", "base", "small", "medium", "large"] as const;
 
@@ -22,7 +23,7 @@ const ACCEPT =
 export function TranscribePage() {
   const [files, setFiles] = useState<File[]>([]);
   const file = files[0] ?? null;
-  const [model, setModel] = useState<string>("base");
+  const [model, setModel] = useState<string>("tiny");
   const [language, setLanguage] = useState("");
   const [result, setResult] = useState<TranscriptionResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -75,11 +76,11 @@ export function TranscribePage() {
         Transcribe file
       </Typography>
       <Typography color="text.secondary" sx={{ maxWidth: "56ch" }}>
-        Drag-and-drop or pick a file. Upload progress reflects bytes sent to the API; the bar then pulses while Whisper
-        runs on the server.
+        Drag-and-drop or pick a file (max {MAX_UPLOAD_MB} MB). Upload progress reflects bytes sent to the API; the bar
+        then pulses while Whisper runs on the server.
       </Typography>
 
-      <Card title="Upload" subtitle="MP3, WAV, M4A, FLAC, and more">
+      <Card title="Upload" subtitle={`MP3, WAV, M4A, FLAC, and more — max ${MAX_UPLOAD_MB} MB`}>
         <Stack spacing={2} sx={{ maxWidth: 480 }}>
           <FileUpload
             files={files}
@@ -88,6 +89,7 @@ export function TranscribePage() {
             disabled={busy}
             accept={ACCEPT}
             allowedExtensions={[".mp3", ".wav", ".m4a", ".flac", ".webm", ".mp4", ".ogg", ".aac", ".opus", ".mov"]}
+            maxSizeMb={MAX_UPLOAD_MB}
             uploadProgress={
               busy
                 ? !uploadDone

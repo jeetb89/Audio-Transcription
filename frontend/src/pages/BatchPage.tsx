@@ -14,6 +14,7 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { FileUpload } from "@/components/FileUpload";
+import { BATCH_MAX_FILES, MAX_UPLOAD_MB } from "@/constants/limits";
 
 const models = ["tiny", "base", "small", "medium", "large"] as const;
 
@@ -22,7 +23,7 @@ const MEDIA_ACCEPT =
 
 export function BatchPage() {
   const [files, setFiles] = useState<File[]>([]);
-  const [model, setModel] = useState("base");
+  const [model, setModel] = useState("tiny");
   const [language, setLanguage] = useState("");
   const [result, setResult] = useState<BatchTranscriptionResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -63,18 +64,21 @@ export function BatchPage() {
         Batch upload
       </Typography>
       <Typography color="text.secondary" sx={{ maxWidth: "56ch" }}>
-        One request, one Whisper load. Upload progress tracks the multipart body; then the server processes each file.
+        Up to {BATCH_MAX_FILES} files at once, {MAX_UPLOAD_MB} MB each. One request, one Whisper load. Upload progress
+        tracks the multipart body; then the server processes each file.
       </Typography>
 
-      <Card title="Files" subtitle="Select several audio or video files">
+      <Card title="Files" subtitle={`Max ${BATCH_MAX_FILES} files, ${MAX_UPLOAD_MB} MB each`}>
         <Stack spacing={2} sx={{ maxWidth: 520 }}>
           <FileUpload
             files={files}
             onFilesChange={setFiles}
             multiple
+            maxFiles={BATCH_MAX_FILES}
             disabled={busy}
             accept={MEDIA_ACCEPT}
             allowedExtensions={[".mp3", ".wav", ".m4a", ".flac", ".webm", ".mp4", ".mov", ".ogg", ".aac", ".opus"]}
+            maxSizeMb={MAX_UPLOAD_MB}
             uploadProgress={
               busy
                 ? !uploadDone

@@ -102,7 +102,7 @@ export function JobsPage() {
   const [st, setSt] = useState<(typeof sourceTypes)[number]>("file_upload");
   const [filename, setFilename] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
-  const [wm, setWm] = useState("base");
+  const [wm, setWm] = useState("tiny");
   const [lang, setLang] = useState("");
   const [userId, setUserId] = useState("");
 

@@ -12,6 +12,7 @@ import type { SubtitleResponse } from "@/api/types";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { FileUpload } from "@/components/FileUpload";
+import { MAX_UPLOAD_MB } from "@/constants/limits";
 
 const models = ["tiny", "base", "small", "medium", "large"] as const;
 
@@ -21,7 +22,7 @@ const MEDIA_ACCEPT =
 export function SubtitlesPage() {
   const [files, setFiles] = useState<File[]>([]);
   const file = files[0] ?? null;
-  const [model, setModel] = useState("base");
+  const [model, setModel] = useState("tiny");
   const [language, setLanguage] = useState("");
   const [result, setResult] = useState<SubtitleResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,11 +74,11 @@ export function SubtitlesPage() {
         SRT subtitles
       </Typography>
       <Typography color="text.secondary" sx={{ maxWidth: "56ch" }}>
-        Whisper segments are formatted as SubRip. Upload progress covers the request body; generation happens on the
-        server.
+        Whisper segments are formatted as SubRip. Max file size {MAX_UPLOAD_MB} MB. Upload progress covers the request
+        body; generation happens on the server.
       </Typography>
 
-      <Card title="Source media" subtitle="Audio or video with an audio track">
+      <Card title="Source media" subtitle={`Audio or video — max ${MAX_UPLOAD_MB} MB`}>
         <Stack spacing={2} sx={{ maxWidth: 480 }}>
           <FileUpload
             files={files}
@@ -86,6 +87,7 @@ export function SubtitlesPage() {
             disabled={busy}
             accept={MEDIA_ACCEPT}
             allowedExtensions={[".mp3", ".wav", ".m4a", ".flac", ".webm", ".mp4", ".mov", ".ogg", ".aac", ".opus"]}
+            maxSizeMb={MAX_UPLOAD_MB}
             uploadProgress={
               busy
                 ? !uploadDone

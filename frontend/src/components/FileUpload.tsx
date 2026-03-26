@@ -8,10 +8,13 @@ import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import { useCallback, useId, useState } from "react";
 import { ProgressBar } from "@/components/ProgressBar";
+import { MAX_UPLOAD_MB } from "@/constants/limits";
 
 export type FileUploadProps = {
   accept?: string;
   multiple?: boolean;
+  /** When `multiple`, cap how many files the user can select (e.g. batch limit). */
+  maxFiles?: number;
   disabled?: boolean;
   onFilesChange: (files: File[]) => void;
   files: File[];
@@ -81,7 +84,8 @@ export function FileUpload({
   onFilesChange,
   files,
   hint = "Drag files here or click to browse",
-  maxSizeMb = 500,
+  maxSizeMb = MAX_UPLOAD_MB,
+  maxFiles,
   allowedExtensions,
   uploadProgress,
 }: FileUploadProps) {
@@ -91,21 +95,26 @@ export function FileUpload({
 
   const validateAndSet = useCallback(
     (list: File[]) => {
+      let next = multiple ? list : list.slice(0, 1);
+      if (multiple && maxFiles != null && next.length > maxFiles) {
+        setError(`At most ${maxFiles} files at once`);
+        return;
+      }
       const maxBytes = maxSizeMb * 1024 * 1024;
-      const bad = list.find((f) => f.size > maxBytes);
+      const bad = next.find((f) => f.size > maxBytes);
       if (bad) {
         setError(`${bad.name} exceeds ${maxSizeMb} MB`);
         return;
       }
-      const typeErr = validateFileTypes(list, accept, allowedExtensions);
+      const typeErr = validateFileTypes(next, accept, allowedExtensions);
       if (typeErr) {
         setError(typeErr);
         return;
       }
       setError(null);
-      onFilesChange(multiple ? list : list.slice(0, 1));
+      onFilesChange(next);
     },
-    [accept, allowedExtensions, maxSizeMb, multiple, onFilesChange],
+    [accept, allowedExtensions, maxFiles, maxSizeMb, multiple, onFilesChange],
   );
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

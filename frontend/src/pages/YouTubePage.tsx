@@ -12,12 +12,13 @@ import { transcribeYouTube } from "@/api/endpoints";
 import type { TranscriptionResponse } from "@/api/types";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { MAX_UPLOAD_MB } from "@/constants/limits";
 
 const models = ["tiny", "base", "small", "medium", "large"] as const;
 
 export function YouTubePage() {
   const [url, setUrl] = useState("");
-  const [model, setModel] = useState("base");
+  const [model, setModel] = useState("tiny");
   const [language, setLanguage] = useState("");
   const [result, setResult] = useState<TranscriptionResponse | null>(null);
 
@@ -32,7 +33,8 @@ export function YouTubePage() {
         YouTube
       </Typography>
       <Typography color="text.secondary" sx={{ maxWidth: "56ch" }}>
-        Downloads best audio via yt-dlp, extracts MP3, then runs Whisper. Requires FFmpeg on the server.
+        Downloads best audio via yt-dlp, extracts MP3, then runs Whisper. The server rejects downloads larger than{" "}
+        {MAX_UPLOAD_MB} MB after extraction (keeps memory low on small instances). Requires FFmpeg on the server.
       </Typography>
 
       <Card title="Video URL" subtitle="Paste a public YouTube link">
