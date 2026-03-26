@@ -26,6 +26,15 @@ async def transcribe_batch(
     if not files:
         raise HTTPException(status_code=400, detail="At least one file is required")
 
+    max_files = int(os.getenv("BATCH_MAX_FILES", "2"))
+    if max_files < 1:
+        max_files = 2
+    if len(files) > max_files:
+        raise HTTPException(
+            status_code=400,
+            detail=f"At most {max_files} files per batch request (BATCH_MAX_FILES)",
+        )
+
     settings = get_settings(request)
     max_bytes = settings.upload_max_mb * 1024 * 1024
     service = get_whisper_service(request, model)

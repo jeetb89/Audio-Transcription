@@ -21,17 +21,21 @@ def load_settings() -> ApiSettings:
     if raw_origins == "*":
         cors: list[str] = ["*"]
     else:
-        cors = [o.strip() for o in raw_origins.split(",") if o.strip()]
+        cors = []
+        for o in raw_origins.split(","):
+            o = o.strip().rstrip("/")
+            if o:
+                cors.append(o)
 
-    wm = os.getenv("WHISPER_MODEL", "base").strip().lower()
+    wm = os.getenv("WHISPER_MODEL", "tiny").strip().lower()
     if wm not in _WHISPER:
-        wm = "base"
+        wm = "tiny"
 
     db_raw = os.getenv("DATABASE_URL", "").strip()
     db = normalize_database_url(db_raw) if db_raw else ""
     return ApiSettings(
         whisper_default_model=wm,
-        upload_max_mb=int(os.getenv("API_UPLOAD_MAX_MB", "500")),
+        upload_max_mb=int(os.getenv("API_UPLOAD_MAX_MB", "5")),
         cors_origins=cors,
         database_url=db or None,
     )

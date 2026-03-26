@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yt_dlp
@@ -10,9 +11,12 @@ from audio_transcription.services.transcription import (
     transcribe_audio_file,
 )
 
-# YouTube often returns 403 for the default client; try several extractor profiles (see yt-dlp issues #15212, #15712).
+# YouTube often returns 403 / "Sign in to confirm you're not a bot"; try several clients (see yt-dlp wiki & issues).
 _YT_EXTRACTOR_FALLBACKS: tuple[dict, ...] = (
+    {"youtube": {"player_client": ["android", "web"]}},
     {"youtube": {"player_client": ["web", "android"]}},
+    {"youtube": {"player_client": ["android_creator"]}},
+    {"youtube": {"player_client": ["mweb"]}},
     {"youtube": {"player_client": ["tv_embedded"]}},
     {"youtube": {"player_client": ["web_embedded"]}},
     {"youtube": {"player_client": ["ios"]}},
@@ -38,6 +42,15 @@ class YouTubeService:
             }
         ]
 
+        cookie_path = os.getenv("YOUTUBE_COOKIES_FILE", "").strip()
+        if cookie_path:
+            p = Path(cookie_path).expanduser()
+            if not p.is_file():
+                raise RuntimeError(
+                    f"YOUTUBE_COOKIES_FILE is set but not a readable file: {p}. "
+                    "Export Netscape cookies from a browser where you're signed into YouTube."
+                )
+
         last_error: Exception | None = None
         for extra_extractors in _YT_EXTRACTOR_FALLBACKS:
             ydl_opts: dict = {
@@ -52,6 +65,8 @@ class YouTubeService:
             }
             if extra_extractors:
                 ydl_opts["extractor_args"] = extra_extractors
+            if cookie_path:
+                ydl_opts["cookiefile"] = str(Path(cookie_path).expanduser().resolve())
 
             # Remove stale partial file from a failed attempt
             mp3_path = self.work_dir / f"{basename}.mp3"
@@ -66,13 +81,34 @@ class YouTubeService:
                 continue
 
             if mp3_path.is_file():
+                max_dl_mb = int(os.getenv("YOUTUBE_MAX_DOWNLOAD_MB", os.getenv("API_UPLOAD_MAX_MB", "5")))
+                if max_dl_mb < 1:
+                    max_dl_mb = 5
+                sz = mp3_path.stat().st_size
+                limit = max_dl_mb * 1024 * 1024
+                if sz > limit:
+                    mp3_path.unlink(missing_ok=True)
+                    raise RuntimeError(
+                        f"Extracted audio is {sz / (1024 * 1024):.1f} MB; max allowed is {max_dl_mb} MB "
+                        "(YOUTUBE_MAX_DOWNLOAD_MB / API_UPLOAD_MAX_MB). Use a shorter video or raise limits on a larger server."
+                    )
                 print(f"\n🎧 Downloaded audio: {mp3_path}")
                 return mp3_path
 
-        hint = (
-            "YouTube blocked the download (common causes: outdated yt-dlp, missing FFmpeg, or IP/rate limits). "
-            "Try: pip install -U yt-dlp  and ensure ffmpeg is on PATH."
-        )
+        err_text = str(last_error) if last_error else ""
+        if "Sign in" in err_text or "not a bot" in err_text.lower():
+            hint = (
+                "YouTube is treating this host as a bot (very common on cloud IPs like Render). "
+                "Fixes: (1) set env YOUTUBE_COOKIES_FILE to a Netscape cookies.txt from a logged-in browser "
+                "(see https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies ); "
+                "(2) run yt-dlp/this flow on your own machine instead of the server; "
+                "(3) pip install -U yt-dlp and ensure ffmpeg is installed."
+            )
+        else:
+            hint = (
+                "YouTube blocked the download (outdated yt-dlp, missing FFmpeg, IP/rate limits, or geo). "
+                "Try: pip install -U yt-dlp, ensure ffmpeg is on PATH, or set YOUTUBE_COOKIES_FILE."
+            )
         if last_error is not None:
             raise RuntimeError(f"{last_error!s} — {hint}") from last_error
         raise FileNotFoundError(f"Expected MP3 at {mp3_path} after download. {hint}")

@@ -17,4 +17,8 @@ services:
       - key: WHISPER_MODEL
         value: tiny
       - key: API_UPLOAD_MAX_MB
-        value: "100"
+        value: "5"
+      - key: BATCH_MAX_FILES
+        value: "2"
+      - key: YOUTUBE_MAX_DOWNLOAD_MB
+        value: "5"
