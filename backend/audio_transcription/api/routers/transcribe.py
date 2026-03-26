@@ -45,10 +45,9 @@ async def transcribe_uploaded_file(
     if not suffix:
         suffix = ".bin"
 
-    service = get_whisper_service(request, model)
-
     def run(path: str) -> TranscriptionResponse:
-        raw = service.transcribe(path, language=language)
+        svc = get_whisper_service(request, model)
+        raw = svc.transcribe(path, language=language)
         payload = jsonable_encoder(dict(raw))
         return TranscriptionResponse(**payload)
 

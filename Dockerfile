@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e ./backend
 
 ENV PORT=8000
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+ENV NUMEXPR_NUM_THREADS=1
 EXPOSE 8000
 
 # DATABASE_URL, CORS_ORIGINS, WHISPER_MODEL, ASSEMBLY_AI_API_KEY — set in host dashboard

@@ -16,6 +16,8 @@ services:
         sync: false
       - key: WHISPER_MODEL
         value: tiny
+      - key: WHISPER_LOW_MEMORY
+        value: "1"
       - key: API_UPLOAD_MAX_MB
         value: "5"
       - key: BATCH_MAX_FILES

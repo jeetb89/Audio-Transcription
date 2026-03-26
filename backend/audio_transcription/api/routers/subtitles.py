@@ -35,9 +35,8 @@ async def subtitles_from_upload(
     if not suffix:
         suffix = ".bin"
 
-    service = get_whisper_service(request, model)
-
     def run(path: str) -> SubtitleResponse:
+        service = get_whisper_service(request, model)
         result = service.transcribe(path, language=language)
         segments = result.get("segments") or []
         srt = segments_to_srt(segments)

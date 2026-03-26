@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import time
 from pathlib import Path
 from typing import Any, TypedDict
@@ -26,6 +27,18 @@ class TranscriptionService:
     @property
     def model_size(self) -> str:
         return self._model_size
+
+    def unload(self) -> None:
+        """Drop model weights so another size can load (critical on ~512MB RAM)."""
+        self._model = None
+        gc.collect()
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
 
     def transcribe(
         self,

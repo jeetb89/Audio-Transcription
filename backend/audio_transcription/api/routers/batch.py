@@ -37,7 +37,6 @@ async def transcribe_batch(
 
     settings = get_settings(request)
     max_bytes = settings.upload_max_mb * 1024 * 1024
-    service = get_whisper_service(request, model)
 
     staged: list[tuple[str, str]] = []
 
@@ -63,6 +62,7 @@ async def transcribe_batch(
             staged.append((f.filename or Path(tmp_path).name, tmp_path))
 
         def run() -> list[BatchTranscriptionItem]:
+            service = get_whisper_service(request, model)
             items: list[BatchTranscriptionItem] = []
             for filename, path in staged:
                 try:

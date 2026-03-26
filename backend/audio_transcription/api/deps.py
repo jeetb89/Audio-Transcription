@@ -18,6 +18,8 @@ def get_settings(request: Request) -> ApiSettings:
 
 def resolve_whisper_model(request: Request, model: str | None) -> str:
     settings: ApiSettings = request.app.state.settings
+    if settings.whisper_low_memory:
+        return "tiny"
     name = (model or settings.whisper_default_model).strip().lower()
     if name not in _WHISPER_MODELS:
         raise HTTPException(
@@ -28,10 +30,15 @@ def resolve_whisper_model(request: Request, model: str | None) -> str:
 
 
 def get_whisper_service(request: Request, model: str | None) -> TranscriptionService:
+    """Keep at most one Whisper model in RAM; evict others before loading a new size."""
     name = resolve_whisper_model(request, model)
     cache: dict[str, TranscriptionService] = request.app.state.whisper_services
-    if name not in cache:
-        cache[name] = TranscriptionService(model_size=name)
+    if name in cache:
+        return cache[name]
+    for key, svc in list(cache.items()):
+        del cache[key]
+        svc.unload()
+    cache[name] = TranscriptionService(model_size=name)
     return cache[name]
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -17,6 +18,23 @@ from audio_transcription.db.session import make_engine, make_session_factory
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Limit BLAS/OpenMP threads — lowers RAM spikes on small instances (e.g. Render 512MB).
+    for k, v in (
+        ("OMP_NUM_THREADS", "1"),
+        ("MKL_NUM_THREADS", "1"),
+        ("OPENBLAS_NUM_THREADS", "1"),
+        ("NUMEXPR_NUM_THREADS", "1"),
+    ):
+        os.environ.setdefault(k, v)
+    try:
+        import torch
+
+        torch.set_num_threads(1)
+        if hasattr(torch, "set_num_interop_threads"):
+            torch.set_num_interop_threads(1)
+    except Exception:
+        pass
+
     app.state.settings = load_settings()
     app.state.whisper_services = {}
     db_url = app.state.settings.database_url
