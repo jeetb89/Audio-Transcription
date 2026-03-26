@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 from audio_transcription.api.config import load_settings
 from audio_transcription.api.routers import batch, health, jobs, subtitles, transcribe, users, youtube
@@ -83,6 +83,10 @@ def create_app() -> FastAPI:
     @app.get("/", include_in_schema=False)
     def root_redirect():
         return RedirectResponse(url="/docs")
+
+    @app.head("/", include_in_schema=False)
+    def root_head():
+        return Response(status_code=200)
 
     return app
 

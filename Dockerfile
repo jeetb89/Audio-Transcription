@@ -13,8 +13,11 @@ COPY backend ./backend
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e ./backend
 
-ENV PORT=8000
+# Pre-download Whisper tiny during build (build VM has RAM). Cuts first-request RAM vs download+load together.
 ENV OMP_NUM_THREADS=1
+RUN python -c "import whisper; whisper.load_model('tiny')"
+
+ENV PORT=8000
 ENV MKL_NUM_THREADS=1
 ENV OPENBLAS_NUM_THREADS=1
 ENV NUMEXPR_NUM_THREADS=1
