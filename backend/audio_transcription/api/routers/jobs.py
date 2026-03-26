@@ -78,6 +78,46 @@ def jobs_dashboard_summary(session: Session = Depends(get_db)) -> JobDashboardSu
     return JobDashboardSummary(total=total, by_status=by_status)
 
 
+# Register list route before /{job_id} so /jobs is never matched as a UUID path.
+@router.get("", response_model=JobListResponse)
+def list_jobs(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    status: str | None = Query(None, description="Filter by job status"),
+    user_id: uuid.UUID | None = Query(None, description="Filter by owning user"),
+    q: str | None = Query(None, description="Search id, filename, or source URL (substring)"),
+    session: Session = Depends(get_db),
+) -> JobListResponse:
+    stmt = select(Job)
+    count_stmt = select(func.count()).select_from(Job)
+    if status is not None:
+        if status not in _STATUSES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status filter. Allowed: {sorted(_STATUSES)}",
+            )
+        stmt = stmt.where(Job.status == status)
+        count_stmt = count_stmt.where(Job.status == status)
+    if user_id is not None:
+        stmt = stmt.where(Job.user_id == user_id)
+        count_stmt = count_stmt.where(Job.user_id == user_id)
+    if q is not None and (term := q.strip()):
+        like = f"%{term}%"
+        search_cond = or_(
+            Job.filename.ilike(like),
+            Job.source_url.ilike(like),
+            cast(Job.id, String).ilike(like),
+        )
+        stmt = stmt.where(search_cond)
+        count_stmt = count_stmt.where(search_cond)
+
+    stmt = stmt.order_by(Job.created_at.desc()).limit(limit).offset(offset)
+    rows = list(session.scalars(stmt).all())
+    total = int(session.scalar(count_stmt) or 0)
+    items = [JobRead.model_validate(r) for r in rows]
+    return JobListResponse(items=items, total=total, limit=limit, offset=offset)
+
+
 @router.get("/{job_id}/stream")
 async def job_event_stream(job_id: uuid.UUID, request: Request) -> StreamingResponse:
     """Server-Sent Events: push job JSON until status is terminal (for live UI)."""
@@ -147,45 +187,6 @@ def get_job(
     session: Session = Depends(get_db),
 ) -> Job:
     return _job_or_404(session, job_id)
-
-
-@router.get("", response_model=JobListResponse)
-def list_jobs(
-    limit: int = Query(20, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    status: str | None = Query(None, description="Filter by job status"),
-    user_id: uuid.UUID | None = Query(None, description="Filter by owning user"),
-    q: str | None = Query(None, description="Search id, filename, or source URL (substring)"),
-    session: Session = Depends(get_db),
-) -> JobListResponse:
-    stmt = select(Job)
-    count_stmt = select(func.count()).select_from(Job)
-    if status is not None:
-        if status not in _STATUSES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid status filter. Allowed: {sorted(_STATUSES)}",
-            )
-        stmt = stmt.where(Job.status == status)
-        count_stmt = count_stmt.where(Job.status == status)
-    if user_id is not None:
-        stmt = stmt.where(Job.user_id == user_id)
-        count_stmt = count_stmt.where(Job.user_id == user_id)
-    if q is not None and (term := q.strip()):
-        like = f"%{term}%"
-        search_cond = or_(
-            Job.filename.ilike(like),
-            Job.source_url.ilike(like),
-            cast(Job.id, String).ilike(like),
-        )
-        stmt = stmt.where(search_cond)
-        count_stmt = count_stmt.where(search_cond)
-
-    stmt = stmt.order_by(Job.created_at.desc()).limit(limit).offset(offset)
-    rows = list(session.scalars(stmt).all())
-    total = int(session.scalar(count_stmt) or 0)
-    items = [JobRead.model_validate(r) for r in rows]
-    return JobListResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.patch("/{job_id}", response_model=JobRead)

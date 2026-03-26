@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TranscriptionResponse(BaseModel):
@@ -88,6 +88,29 @@ class JobRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
+
+    @field_validator("result_segments", mode="before")
+    @classmethod
+    def normalize_result_segments(cls, v: object) -> list[dict[str, Any]] | None:
+        """JSONB may be a dict, mixed list, or legacy shape — avoid 500 on list_jobs."""
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return [v]
+        if not isinstance(v, list):
+            return None
+        out: list[dict[str, Any]] = []
+        for el in v:
+            if isinstance(el, dict):
+                out.append(el)
+        return out or None
+
+    @field_validator("processing_time_seconds", mode="before")
+    @classmethod
+    def coerce_processing_time(cls, v: object) -> float | None:
+        if v is None:
+            return None
+        return float(v)
 
 
 class JobListResponse(BaseModel):
